@@ -1,0 +1,141 @@
+<!DOCTYPE html>
+<html lang="az">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex">
+<title>Nizami Kino Mərkəzinin Dostları</title>
+<style>
+:root{--bg:#0f0f14;--panel:#17171f;--line:#2a2a35;--gold:#c8a45a;--text:#f2efe8;--muted:#9a978f;--ok:#5cc98a;--no:#ff7a70;color-scheme:dark}
+*{box-sizing:border-box}
+[hidden]{display:none!important}
+body{margin:0;min-height:100vh;background:var(--bg);color:var(--text);font:16px/1.5 system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;display:flex;justify-content:center;padding:24px 16px}
+main{width:100%;max-width:400px}
+.brand{text-align:center;margin-bottom:18px}
+.brand img{width:64px;height:64px;border-radius:50%;object-fit:cover;background:var(--panel)}
+.brand p{margin:8px 0 0;color:var(--gold);font-size:14px}
+#card{background:var(--panel);border:1px solid var(--line);border-radius:18px;padding:26px 22px;text-align:center}
+h1{font:600 26px/1.25 Georgia,"Times New Roman",serif;margin:0 0 8px;overflow-wrap:anywhere}
+p{margin:0 0 10px}
+.muted{color:var(--muted)}
+.ok{color:var(--ok)}
+.no{color:var(--no)}
+#qr{display:inline-block;background:#fff;padding:14px;border-radius:12px;margin:16px 0 12px;line-height:0}
+.mono{font:18px/1.2 ui-monospace,Consolas,monospace;letter-spacing:.12em}
+.faiz{font:700 56px/1.1 Georgia,serif;color:var(--gold);margin:6px 0 14px}
+input{width:100%;font-size:18px;padding:13px;border-radius:10px;border:1px solid var(--line);background:#0f0f14;color:var(--text);margin-top:6px}
+input:focus,.btn:focus-visible{outline:2px solid var(--gold);outline-offset:2px}
+.calc{min-height:56px;margin:12px 0;font-size:18px}
+.btn{display:block;width:100%;margin-top:14px;padding:14px;border:0;border-radius:10px;background:var(--gold);color:#16130c;font:600 17px system-ui,sans-serif;text-align:center;text-decoration:none;cursor:pointer}
+.btn.alt{background:transparent;color:var(--gold);border:1.5px solid var(--gold)}
+.btn:disabled{opacity:.45;cursor:default}
+</style>
+</head>
+<body>
+<main>
+  <div class="brand">
+    <img src="https://raw.githubusercontent.com/nizaminindostlari/nizami-assets/main/logo.png" alt="Nizami Kino Mərkəzi">
+    <p>Nizami Kino Mərkəzinin Dostları</p>
+  </div>
+  <div id="card"></div>
+</main>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+<script>
+var API = "https://script.google.com/macros/s/AKfycbzZPyoQr1ytaDmiteEL13K0TZ93crgpSVqL10ZnwomAuIjPiWiIa6uKh2Idm2ceM9GE/exec";
+var P = new URLSearchParams(location.search);
+var card = document.getElementById("card");
+function $(id){ return document.getElementById(id); }
+
+function api(data){
+  return fetch(API, {
+    method: "POST",
+    headers: { "Content-Type": "text/plain;charset=utf-8" },
+    body: JSON.stringify(data)
+  }).then(function(r){ return r.json(); });
+}
+
+function msg(title, text, cls){
+  card.innerHTML = '<h1 id="mt"></h1><p id="mx" class="muted"></p>';
+  $("mt").textContent = title;
+  $("mt").className = cls || "";
+  $("mx").textContent = text || "";
+}
+function xeta(){ msg("Bağlantı xətası", "İnternetinizi yoxlayıb səhifəni yeniləyin.", "no"); }
+function getKey(){ try { return localStorage.getItem("kassirAcar") || ""; } catch(e){ return ""; } }
+
+/* ---------- Üzv kartı ---------- */
+function kart(id){
+  msg("Yüklənir...");
+  api({ op: "kart", id: id }).then(function(r){
+    if (!r.ok){ msg("Kart tapılmadı", "Linki məktubdakı düymə ilə yenidən açın.", "no"); return; }
+    card.innerHTML = '<p class="muted">Üzvlük kartı</p><h1 id="ad"></h1><div id="qr"></div><div id="uid" class="mono"></div><a id="gw" class="btn alt" hidden target="_blank" rel="noopener">Google Wallet-a əlavə et</a>';
+    $("ad").textContent = r.ad;
+    $("uid").textContent = r.id;
+    new QRCode($("qr"), { text: location.origin + location.pathname + "?yoxla=" + r.id, width: 220, height: 220 });
+    if (r.wallet && /Android/i.test(navigator.userAgent)){
+      var g = $("gw"); g.href = r.wallet; g.hidden = false;
+    }
+  }).catch(xeta);
+}
+
+/* ---------- Kassir səhifəsi ---------- */
+function yoxla(id){
+  var acar = getKey();
+  if (!acar){
+    msg("Yalnız kassirlər üçün", "Bu, Nizami Kino Mərkəzinin Dostları üzvlük kartının QR kodudur. Endirim almaq üçün kartı kassada göstərin.");
+    return;
+  }
+  msg("Yoxlanılır...");
+  api({ op: "yoxla", id: id, acar: acar }).then(function(r){
+    if (!r.ok){ msg("Bu telefon aktiv deyil", "Aktivləşdirmə linkini bu telefonun brauzerində yenidən açın.", "no"); return; }
+    if (!r.tapildi){ msg("Üzv tapılmadı", "Bu kart sistemdə yoxdur.", "no"); return; }
+    if (!r.aktiv){ msg("Üzvlük dayandırılıb", r.ad, "no"); return; }
+    var faiz = Number(r.terefdas.faiz);
+    card.innerHTML = '<h1 id="ad"></h1><p class="ok">Aktiv üzv</p><p id="tad" class="muted"></p><div id="faiz" class="faiz"></div>' +
+      '<input id="m" inputmode="decimal" autocomplete="off" placeholder="Hesabın məbləği (₼)">' +
+      '<div id="h" class="calc"></div><button id="b" class="btn">Endirimi tətbiq et</button><p id="n"></p>';
+    $("ad").textContent = r.ad;
+    $("tad").textContent = r.terefdas.ad;
+    $("faiz").textContent = faiz + "% endirim";
+    $("m").addEventListener("input", function(){
+      var m = Number($("m").value.replace(",", "."));
+      if (!m || m <= 0){ $("h").textContent = ""; return; }
+      var e = Math.round(m * faiz) / 100;
+      $("h").innerHTML = "Endirim: <b>" + e.toFixed(2) + " ₼</b><br>Ödənilməli: <b>" + (m - e).toFixed(2) + " ₼</b>";
+    });
+    $("b").addEventListener("click", function(){
+      var m = $("m").value, n = $("n");
+      if (!m){ n.className = "no"; n.textContent = "Məbləği yazın"; return; }
+      $("b").disabled = true;
+      api({ op: "endirim", id: id, acar: acar, mebleg: m }).then(function(x){
+        n.className = x.ok ? "ok" : "no";
+        n.textContent = x.mesaj || "Xəta, yenidən cəhd edin";
+        if (!x.ok) $("b").disabled = false;
+      }).catch(function(){ n.className = "no"; n.textContent = "Bağlantı xətası, yenidən cəhd edin"; $("b").disabled = false; });
+    });
+  }).catch(xeta);
+}
+
+/* ---------- Kassir telefonunun aktivləşdirilməsi ---------- */
+function qosul(k){
+  if (!/^[A-Za-z0-9]{12,64}$/.test(k)){ msg("Link etibarsızdır", "Aktivləşdirmə linkini tam kopyalayıb yenidən açın.", "no"); return; }
+  msg("Yoxlanılır...");
+  api({ op: "qosul", acar: k }).then(function(r){
+    if (!r.ad){ msg("Link etibarsızdır", "Administratordan yeni link istəyin.", "no"); return; }
+    try { localStorage.setItem("kassirAcar", k); }
+    catch(e){ msg("Brauzer yaddaşı bağlıdır", "Linki məxfi rejimdə yox, adi brauzer pəncərəsində açın.", "no"); return; }
+    try { history.replaceState(null, "", location.pathname); } catch(e){}
+    msg("Telefon aktivləşdirildi", r.ad + " kassası. İndi müştərinin QR kartını telefonun kamerası ilə oxuda bilərsiniz.", "ok");
+  }).catch(xeta);
+}
+
+/* ---------- Yönləndirici ---------- */
+var ID_RE = /^NK-[A-Z0-9]{4,12}$/;
+if (P.get("kart") && ID_RE.test(P.get("kart"))) kart(P.get("kart"));
+else if (P.get("yoxla") && ID_RE.test(P.get("yoxla"))) yoxla(P.get("yoxla"));
+else if (P.get("qosul")) qosul(P.get("qosul"));
+else msg("Nizami Kino Mərkəzinin Dostları", "Üzvlük kartınızı qeydiyyat məktubundakı düymə ilə açın.");
+</script>
+</body>
+</html>
