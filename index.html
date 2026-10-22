@@ -64,18 +64,64 @@ function msg(title, text, cls){
 function xeta(){ msg("Bağlantı xətası", "İnternetinizi yoxlayıb səhifəni yeniləyin.", "no"); }
 function getKey(){ try { return localStorage.getItem("kassirAcar") || ""; } catch(e){ return ""; } }
 
+/* ---------- Kartın şəkli ---------- */
+var LOGO = "https://raw.githubusercontent.com/nizaminindostlari/nizami-assets/main/logo.png";
+function kartSekli(r, qrUrl, done){
+  try {
+    var t = document.createElement("div");
+    new QRCode(t, { text: qrUrl, width: 440, height: 440 });
+    var qc = t.querySelector("canvas");
+    var W = 720, H = 1040, c = document.createElement("canvas");
+    c.width = W; c.height = H;
+    var x = c.getContext("2d");
+    var ciz = function(logo){
+      x.fillStyle = "#0f0f14"; x.fillRect(0, 0, W, H);
+      x.strokeStyle = "#c8a45a"; x.lineWidth = 4; x.strokeRect(24, 24, W - 48, H - 48);
+      x.textAlign = "center";
+      if (logo){ x.save(); x.beginPath(); x.arc(W / 2, 130, 64, 0, 7); x.clip(); x.drawImage(logo, W / 2 - 64, 66, 128, 128); x.restore(); }
+      x.fillStyle = "#c8a45a"; x.font = "30px system-ui,sans-serif";
+      x.fillText("Nizami Kino Mərkəzinin Dostları", W / 2, 250);
+      var s = 52; x.font = "600 " + s + "px Georgia,serif";
+      while (x.measureText(r.ad).width > 620 && s > 24){ s -= 2; x.font = "600 " + s + "px Georgia,serif"; }
+      x.fillStyle = "#f2efe8"; x.fillText(r.ad, W / 2, 340);
+      x.fillStyle = "#fff"; x.fillRect(110, 390, 500, 500);
+      x.drawImage(qc, 140, 420, 440, 440);
+      x.fillStyle = "#f2efe8"; x.font = "38px ui-monospace,Consolas,monospace";
+      x.fillText(r.id, W / 2, 960);
+      c.toBlob(done, "image/png");
+    };
+    var im = new Image(); im.crossOrigin = "anonymous";
+    im.onload = function(){ ciz(im); };
+    im.onerror = function(){ ciz(null); };
+    im.src = LOGO;
+  } catch(e){ done(null); }
+}
+
 /* ---------- Üzv kartı ---------- */
 function kart(id){
   msg("Yüklənir...");
   api({ op: "kart", id: id }).then(function(r){
     if (!r.ok){ msg("Kart tapılmadı", "Linki məktubdakı düymə ilə yenidən açın.", "no"); return; }
-    card.innerHTML = '<p class="muted">Üzvlük kartı</p><h1 id="ad"></h1><div id="qr"></div><div id="uid" class="mono"></div><a id="gw" class="btn alt" hidden target="_blank" rel="noopener">Google Wallet-a əlavə et</a>';
+    card.innerHTML = '<p class="muted">Üzvlük kartı</p><h1 id="ad"></h1><div id="qr"></div><div id="uid" class="mono"></div><a id="gw" class="btn alt" hidden target="_blank" rel="noopener">Google Wallet-a əlavə et</a><button id="sv" class="btn alt" disabled>Kartı şəkil kimi saxla</button><div id="pv"></div>';
     $("ad").textContent = r.ad;
     $("uid").textContent = r.id;
     new QRCode($("qr"), { text: location.origin + location.pathname + "?yoxla=" + r.id, width: 220, height: 220 });
     if (r.wallet && /Android/i.test(navigator.userAgent)){
       var g = $("gw"); g.href = r.wallet; g.hidden = false;
     }
+    var qrUrl = location.origin + location.pathname + "?yoxla=" + r.id;
+    kartSekli(r, qrUrl, function(blob){
+      if (!blob) return;
+      var file = new File([blob], "nizami-dostlari-kart.png", { type: "image/png" });
+      var b = $("sv"); b.disabled = false;
+      b.onclick = function(){
+        if (navigator.canShare && navigator.canShare({ files: [file] })){
+          navigator.share({ files: [file] }).catch(function(){});
+        } else {
+          $("pv").innerHTML = '<img src="' + URL.createObjectURL(blob) + '" alt="Üzvlük kartı" style="width:100%;border-radius:12px;margin-top:14px"><p class="muted" style="margin-top:8px">Telefonda şəkli uzun basıb saxlayın, kompüterdə sağ klik edin.</p>';
+        }
+      };
+    });
   }).catch(xeta);
 }
 
