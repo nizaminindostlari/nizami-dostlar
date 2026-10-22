@@ -29,6 +29,9 @@ input:focus,.btn:focus-visible{outline:2px solid var(--gold);outline-offset:2px}
 .btn{display:block;width:100%;margin-top:14px;padding:14px;border:0;border-radius:10px;background:var(--gold);color:#16130c;font:600 17px system-ui,sans-serif;text-align:center;text-decoration:none;cursor:pointer}
 .btn.alt{background:transparent;color:var(--gold);border:1.5px solid var(--gold)}
 .btn:disabled{opacity:.45;cursor:default}
+label{display:block;text-align:left;margin-top:14px;font-size:14px;color:var(--muted)}
+.chk{display:flex;gap:10px;align-items:flex-start;text-align:left;margin-top:16px;font-size:14px;color:var(--muted)}
+.chk input{width:auto;margin-top:4px}
 </style>
 </head>
 <body>
@@ -176,12 +179,41 @@ function qosul(k){
   }).catch(xeta);
 }
 
+/* ---------- Qeydiyyat ---------- */
+function qeydiyyat(){
+  card.innerHTML = '<h1>Dostlar klubuna qoşulun</h1><p class="muted">Qeydiyyatdan keçin, üzvlük kartınız emailinizə göndəriləcək.</p>' +
+    '<form id="f" novalidate>' +
+    '<label for="fad">Ad və soyad</label><input id="fad" autocomplete="name" maxlength="80">' +
+    '<label for="ftel">Telefon nömrəsi</label><input id="ftel" type="tel" autocomplete="tel" maxlength="30">' +
+    '<label for="fem">Email</label><input id="fem" type="email" autocomplete="email" maxlength="120">' +
+    '<input id="fweb" tabindex="-1" autocomplete="off" aria-hidden="true" style="position:absolute;left:-9999px">' +
+    '<label class="chk"><input id="frz" type="checkbox"><span>Şəxsi məlumatlarımın üzvlük proqramı məqsədilə işlənməsinə razıyam</span></label>' +
+    '<button id="fsb" class="btn" type="submit">Qeydiyyatdan keç</button><p id="fn" style="margin-top:12px"></p></form>';
+  $("f").addEventListener("submit", function(ev){
+    ev.preventDefault();
+    var n = $("fn");
+    var d = { op: "qeydiyyat", ad: $("fad").value.trim(), telefon: $("ftel").value.trim(),
+              email: $("fem").value.trim(), razi: $("frz").checked, web: $("fweb").value };
+    if (d.ad.length < 3 || d.telefon.length < 7 || !/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(d.email) || !d.razi){
+      n.className = "no"; n.textContent = "Bütün xanaları düzgün doldurun və razılığı işarələyin."; return;
+    }
+    $("fsb").disabled = true; n.className = "muted"; n.textContent = "Göndərilir...";
+    api(d).then(function(r){
+      if (r.ok){
+        msg("Qeydiyyatınız üçün təşəkkür edirik", "Sizə təsdiq məktubu göndərildi. Əgər mail qutusunda məktub görünmürsə, spam bölməsini yoxlamağınızı xahiş edirik.", "ok");
+      } else {
+        n.className = "no"; n.textContent = r.mesaj || "Xəta, yenidən cəhd edin."; $("fsb").disabled = false;
+      }
+    }).catch(function(){ n.className = "no"; n.textContent = "Bağlantı xətası, yenidən cəhd edin."; $("fsb").disabled = false; });
+  });
+}
+
 /* ---------- Yönləndirici ---------- */
 var ID_RE = /^NK-[A-Z0-9]{4,12}$/;
 if (P.get("kart") && ID_RE.test(P.get("kart"))) kart(P.get("kart"));
 else if (P.get("yoxla") && ID_RE.test(P.get("yoxla"))) yoxla(P.get("yoxla"));
 else if (P.get("qosul")) qosul(P.get("qosul"));
-else msg("Nizami Kino Mərkəzinin Dostları", "Üzvlük kartınızı qeydiyyat məktubundakı düymə ilə açın.");
+else qeydiyyat();
 </script>
 </body>
 </html>
