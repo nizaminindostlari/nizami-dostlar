@@ -38,6 +38,13 @@ label{display:block;text-align:left;margin-top:14px;font-size:14px;color:var(--m
 .back a{color:var(--muted);font-size:14px;text-decoration:none}
 .back a:hover,.back a:focus-visible{color:var(--gold)}
 .brand a{display:inline-block;border-radius:50%}
+.seg{display:flex;gap:10px;margin-top:6px}
+.seg label{flex:1;margin:0;position:relative}
+.seg input{position:absolute;inset:0;width:100%;height:100%;margin:0;padding:0;border:0;opacity:0;cursor:pointer}
+.seg span{display:block;text-align:center;padding:13px;border:1px solid var(--line);border-radius:10px;background:#0f0f14;color:var(--text);font-size:17px}
+.seg input:checked+span{border-color:var(--gold);color:var(--gold);box-shadow:inset 0 0 0 1px var(--gold)}
+.seg input:focus-visible+span{outline:2px solid var(--gold);outline-offset:2px}
+input[type=date]{min-height:52px;text-align:left}
 </style>
 </head>
 <body>
@@ -191,17 +198,22 @@ function qeydiyyat(){
   card.innerHTML = '<h1>Dostlar klubuna qoşulun</h1><p class="muted">Qeydiyyatdan keçin, üzvlük kartınız emailinizə göndəriləcək.</p>' +
     '<form id="f" novalidate>' +
     '<label for="fad">Ad və soyad</label><input id="fad" autocomplete="name" maxlength="80">' +
+    '<label id="fcl">Cins</label><div class="seg" role="radiogroup" aria-labelledby="fcl"><label><input type="radio" name="cins" value="Qadın"><span>Qadın</span></label><label><input type="radio" name="cins" value="Kişi"><span>Kişi</span></label></div>' +
+    '<label for="fdg">Doğum tarixi</label><input id="fdg" type="date" min="1900-01-01" autocomplete="bday">' +
     '<label for="ftel">Telefon nömrəsi</label><input id="ftel" type="tel" autocomplete="tel" maxlength="30">' +
     '<label for="fem">Email</label><input id="fem" type="email" autocomplete="email" maxlength="120">' +
     '<input id="fweb" tabindex="-1" autocomplete="off" aria-hidden="true" style="position:absolute;left:-9999px">' +
-    '<label class="chk"><input id="frz" type="checkbox"><span>Şəxsi məlumatlarımın üzvlük proqramı məqsədilə işlənməsinə razıyam</span></label>' +
+    '<label class="chk"><input id="frz" type="checkbox"><span>Şəxsi məlumatlarımın (ad, əlaqə, cins və doğum tarixi) üzvlük proqramı və ümumi statistika məqsədilə işlənməsinə razıyam</span></label>' +
     '<button id="fsb" class="btn" type="submit">Qeydiyyatdan keç</button><p id="fn" style="margin-top:12px"></p></form>';
+  $("fdg").max = new Date().toISOString().slice(0, 10);
   $("f").addEventListener("submit", function(ev){
     ev.preventDefault();
     var n = $("fn");
-    var d = { op: "qeydiyyat", ad: $("fad").value.trim(), telefon: $("ftel").value.trim(),
+    var sec = document.querySelector('input[name="cins"]:checked');
+    var d = { op: "qeydiyyat", ad: $("fad").value.trim(), cins: sec ? sec.value : "", dogum: $("fdg").value,
+              telefon: $("ftel").value.trim(),
               email: $("fem").value.trim(), razi: $("frz").checked, web: $("fweb").value };
-    if (d.ad.length < 3 || d.telefon.length < 7 || !/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(d.email) || !d.razi){
+    if (d.ad.length < 3 || !d.cins || !d.dogum || d.telefon.length < 7 || !/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(d.email) || !d.razi){
       n.className = "no"; n.textContent = "Bütün xanaları düzgün doldurun və razılığı işarələyin."; return;
     }
     $("fsb").disabled = true; n.className = "muted"; n.textContent = "Göndərilir...";
